@@ -1,4 +1,4 @@
-name: Cypress Test with Screenshots
+name: Cypress Test with Screenshots & Allure Report
 
 on:
   push:
@@ -25,26 +25,57 @@ jobs:
       - name: Verify Cypress installation
         run: npx cypress verify
 
-      - name: Create screenshots directory
-        run: mkdir -p cypress/screenshots
+      - name: Create required directories
+        run: |
+          mkdir -p cypress/screenshots
+          mkdir -p allure-results
+          mkdir -p allure-report
 
-      - name: Run Cypress tests
-        run: npx cypress run
+      - name: Run Cypress tests with Allure enabled
+        run: npx cypress run --env allure=true
 
       - name: List generated screenshots
         run: |
           echo "📸 Checking for screenshots..."
           ls -la cypress/screenshots/
           if [ $(ls -A cypress/screenshots | wc -l) -eq 0 ]; then
-            echo "❌ Error: No screenshots were taken!"
+            echo "❌ No screenshots found!"
             exit 1
-          else
-            echo "✅ Success: Screenshots found!"
           fi
 
-      - name: Upload Screenshots
+      - name: List Allure result files
+        run: |
+          echo "📊 Checking Allure results..."
+          ls -la allure-results/
+          if [ $(ls -A allure-results | wc -l) -eq 0 ]; then
+            echo "❌ Error: Allure results are empty or missing!"
+            exit 1
+          else
+            echo "✅ Allure results generated successfully."
+          fi
+
+      - name: Generate Allure Report
+        run: npx allure generate allure-results --clean -o allure-report
+
+      - name: Verify Allure Report Generated
+        run: |
+          echo "📄 Allure report files:"
+          ls -la allure-report/
+          if [ ! -f "allure-report/index.html" ]; then
+            echo "❌ Failed to generate Allure report!"
+            exit 1
+          fi
+
+      - name: Upload Test Screenshots
         uses: actions/upload-artifact@v4
         with:
           name: cypress-screenshots
           path: cypress/screenshots/
+          retention-days: 7
+
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
           retention-days: 7
