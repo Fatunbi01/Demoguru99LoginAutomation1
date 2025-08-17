@@ -17,11 +17,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Run the full test pipeline (Cypress + Allure generate + Allure open)
-      - name: Run Tests with Allure Reporting
-        run: npm test
+      # Run Cypress tests (uses the npm script defined in package.json)
+      - name: Run Cypress tests
+        run: npm run cy:run
 
-      # Upload Allure report as artifact
+      # Generate Allure report after tests
+      - name: Generate Allure report
+        run: npm run allure:generate
+
+      # Upload Allure report as GitHub Action artifact
       - name: Upload Allure Report Artifact
         uses: actions/upload-artifact@v4
         with:
