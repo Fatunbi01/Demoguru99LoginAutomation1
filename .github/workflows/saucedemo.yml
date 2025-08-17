@@ -11,39 +11,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repo
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      # Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # Run Cypress tests (headless)
+      # Run Cypress tests using the official action
       - name: Run Cypress tests
-        run: npm run cy:run
+        uses: cypress-io/github-action@v6
+        with:
+          build: npm run build
+          start: npm start
+          runTests: npm run cy:run
 
-      # Generate Allure report
       - name: Generate Allure report
         run: npm run allure:generate
 
-      # Upload Allure report as artifact
       - name: Upload Allure Report Artifact
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report
-
-      # (Optional) Deploy Allure report to GitHub Pages
-      # Uncomment if you want the report available online
-      # - name: Deploy Allure report to GitHub Pages
-      #   uses: peaceiris/actions-gh-pages@v3
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     publish_dir: ./allure-report
