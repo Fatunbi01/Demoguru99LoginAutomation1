@@ -1,4 +1,4 @@
-name: Cypress Tests with PDF Report
+name: Cypress UI Mode - Take Screenshots
 
 on:
   push:
@@ -22,66 +22,41 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify Cypress install
-        run: npx cypress verify
-
-      - name: Create test folders
-        run: |
-          mkdir -p screenshots
-          mkdir -p reports/html
-          mkdir -p reports/pdf
-
-      - name: Run Cypress tests with screenshots
-        run: |
-          npx cypress run \
-            --config screenshotsFolder=./screenshots \
-            --config video=false
-
-      - name: Generate HTML Report
-        run: |
-          cat << EOF > reports/html/report.html
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8" />
-            <title>Cypress Test Report</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              h1 { color: #2c3e50; }
-              .screenshot { margin: 20px 0; border: 1px solid #ddd; }
-              .screenshot img { width: 80%; border-radius: 8px; }
-            </style>
-          </head>
-          <body>
-            <h1>✅ Cypress Test Report</h1>
-            <p><strong>Run:</strong> ${{ github.run_id }}</p>
-            <p><strong>Branch:</strong> ${{ github.ref }}</p>
-            <p><strong>Date:</strong> $(date)</p>
-            <hr>
-            $(ls screenshots/*.png | sed 's|screenshots/|<div class="screenshot"><h3>\0</h3><img src="../\0" alt="\0"></div>|g')
-          </body>
-          </html>
-          EOF
-
-      - name: Install wkhtmltopdf
+      - name: Install Xvfb (Virtual Display)
         run: |
           sudo apt-get update
-          sudo apt-get install -y wkhtmltopdf
+          sudo apt-get install -y xvfb
 
-      - name: Convert HTML Report to PDF
+      - name: Create screenshots directory
+        run: mkdir -p screenshots
+
+      - name: Run Cypress in GUI mode with virtual display
         run: |
-          wkhtmltopdf reports/html/report.html reports/pdf/cypress-test-report.pdf
+          # Start virtual display
+          Xvfb :99 -screen 0 1920x1080x24 > /tmp/xvfb.log 2>&1 &
+          export DISPLAY=:99
 
-      - name: Upload PDF Report
+          # Run Cypress with screenshots enabled
+          npx cypress run \
+            --config screenshotsFolder=./screenshots \
+            --config video=false \
+            --env allure=true
+
+        # Note: We use `cypress run` with headed browser, not `cypress open`
+        # because `open` is for interactive use only.
+
+      - name: Check generated screenshots
+        run: |
+          echo "📸 Found screenshots:"
+          ls -la screenshots/
+          if [ $(ls -A screenshots | wc -l) -eq 0 ]; then
+            echo "❌ Error: No screenshots were taken!"
+            exit 1
+          fi
+
+      - name: Upload All Screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-pdf-report
-          path: reports/pdf/cypress-test-report.pdf
-          retention-days: 14
-
-      - name: Upload Screenshots (Optional)
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-screenshots
+          name: cypress-screenshots
           path: screenshots/
           retention-days: 7
