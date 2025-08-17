@@ -17,25 +17,33 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # Use a stable LTS version
+          node-version: '20'
 
       - name: Install dependencies
-        run: npm ci  # Use 'npm ci' for consistent, clean installs in CI
+        run: npm ci
 
       - name: Verify Cypress install
         run: npx cypress verify
-        # This forces Cypress to download and verify the binary
 
-      - name: Run Cypress tests
-        run: npm run cy:run
+      - name: Run Cypress tests with screenshots
+        run: |
+          mkdir -p screenshots
+          # Run Cypress with explicit screenshot options
+          npx cypress run --env allure=true --record=false --config video=false --config screenshotsFolder=./screenshots
 
-      - name: Generate Allure report
-        run: npm run allure:generate
+      - name: Check if screenshots exist
+        run: |
+          ls -la screenshots/
+          if [ ! -d "screenshots" ] || [ $(ls -A screenshots | wc -l) -eq 0 ]; then
+            echo "Error: No screenshots found!"
+            exit 1
+          fi
 
-      - name: Upload Allure Report Artifact
+      - name: Upload Screenshots Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: allure-report
-          path: allure-report
+          name: test-screenshots
+          path: screenshots/
+          retention-days: 7
 
 
