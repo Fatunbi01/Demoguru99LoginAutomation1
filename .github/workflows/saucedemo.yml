@@ -1,34 +1,22 @@
 name: Cypress Tests - Saucedemo
-
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
 jobs:
   cypress-run:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'  # Use a stable LTS version
-
       - name: Install dependencies
-        run: npm ci  # Use 'npm ci' for consistent, clean installs in CI
-
-      - name: Verify Cypress install
-        run: npx cypress verify
-        # This forces Cypress to download and verify the binary
-
+        run: npm install
+      # Run Cypress tests using the official action
       - name: Run Cypress tests
-        run: npm run cy:run
-
+        uses: cypress-io/github-action@v6
+        with:
+          runTests: npm run cy:run
       - name: Generate Allure report
         run: npm run allure:generate
 
@@ -37,3 +25,4 @@ jobs:
         with:
           name: allure-report
           path: allure-report
+
