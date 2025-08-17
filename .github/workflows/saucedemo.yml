@@ -1,4 +1,4 @@
-name: Cypress UI Mode - Take Screenshots
+name: Cypress Test with Screenshots
 
 on:
   push:
@@ -22,41 +22,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Xvfb (Virtual Display)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
+      - name: Verify Cypress installation
+        run: npx cypress verify
 
       - name: Create screenshots directory
-        run: mkdir -p screenshots
+        run: mkdir -p cypress/screenshots
 
-      - name: Run Cypress in GUI mode with virtual display
+      - name: Run Cypress tests
+        run: npx cypress run
+
+      - name: List generated screenshots
         run: |
-          # Start virtual display
-          Xvfb :99 -screen 0 1920x1080x24 > /tmp/xvfb.log 2>&1 &
-          export DISPLAY=:99
-
-          # Run Cypress with screenshots enabled
-          npx cypress run \
-            --config screenshotsFolder=./screenshots \
-            --config video=false \
-            --env allure=true
-
-        # Note: We use `cypress run` with headed browser, not `cypress open`
-        # because `open` is for interactive use only.
-
-      - name: Check generated screenshots
-        run: |
-          echo "📸 Found screenshots:"
-          ls -la screenshots/
-          if [ $(ls -A screenshots | wc -l) -eq 0 ]; then
+          echo "📸 Checking for screenshots..."
+          ls -la cypress/screenshots/
+          if [ $(ls -A cypress/screenshots | wc -l) -eq 0 ]; then
             echo "❌ Error: No screenshots were taken!"
             exit 1
+          else
+            echo "✅ Success: Screenshots found!"
           fi
 
-      - name: Upload All Screenshots
+      - name: Upload Screenshots
         uses: actions/upload-artifact@v4
         with:
           name: cypress-screenshots
-          path: screenshots/
+          path: cypress/screenshots/
           retention-days: 7
