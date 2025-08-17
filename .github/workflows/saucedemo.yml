@@ -1,4 +1,4 @@
-name: Cypress Tests - Saucedemo
+name: Cypress Tests with PDF Report
 
 on:
   push:
@@ -25,35 +25,63 @@ jobs:
       - name: Verify Cypress install
         run: npx cypress verify
 
-      - name: Run Cypress tests
+      - name: Create test folders
         run: |
           mkdir -p screenshots
+          mkdir -p reports/html
+          mkdir -p reports/pdf
+
+      - name: Run Cypress tests with screenshots
+        run: |
           npx cypress run \
             --config screenshotsFolder=./screenshots \
-            --env allure=true
+            --config video=false
 
-      - name: Generate Allure Report
+      - name: Generate HTML Report
         run: |
-          npx allure generate allure-results --clean -o allure-report
-          echo "Allure report generated at: file://$PWD/allure-report/index.html"
+          cat << EOF > reports/html/report.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <title>Cypress Test Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h1 { color: #2c3e50; }
+              .screenshot { margin: 20px 0; border: 1px solid #ddd; }
+              .screenshot img { width: 80%; border-radius: 8px; }
+            </style>
+          </head>
+          <body>
+            <h1>✅ Cypress Test Report</h1>
+            <p><strong>Run:</strong> ${{ github.run_id }}</p>
+            <p><strong>Branch:</strong> ${{ github.ref }}</p>
+            <p><strong>Date:</strong> $(date)</p>
+            <hr>
+            $(ls screenshots/*.png | sed 's|screenshots/|<div class="screenshot"><h3>\0</h3><img src="../\0" alt="\0"></div>|g')
+          </body>
+          </html>
+          EOF
 
-      - name: ⚠️ Show Local Report URL (FOR REFERENCE ONLY)
+      - name: Install wkhtmltopdf
         run: |
-          echo ""
-          echo "=========================================="
-          echo "📌 Allure Report is available at:"
-          echo ""
-          echo "   http://192.168.1.108:61305/index.html"
-          echo ""
-          echo "❗ This is YOUR local machine URL."
-          echo "❗ Only YOU can access it."
-          echo "❗ Turn on your PC and run:"
-          echo "     allure open allure-report"
-          echo "=========================================="
-          echo ""
+          sudo apt-get update
+          sudo apt-get install -y wkhtmltopdf
 
-      - name: Upload Allure Report (so you can download it)
+      - name: Convert HTML Report to PDF
+        run: |
+          wkhtmltopdf reports/html/report.html reports/pdf/cypress-test-report.pdf
+
+      - name: Upload PDF Report
         uses: actions/upload-artifact@v4
         with:
-          name: allure-report
-          path: allure-report/
+          name: cypress-pdf-report
+          path: reports/pdf/cypress-test-report.pdf
+          retention-days: 14
+
+      - name: Upload Screenshots (Optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: screenshots/
+          retention-days: 7
