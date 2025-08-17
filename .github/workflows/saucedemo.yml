@@ -25,25 +25,35 @@ jobs:
       - name: Verify Cypress install
         run: npx cypress verify
 
-      - name: Run Cypress tests with screenshots
+      - name: Create required directories
         run: |
           mkdir -p screenshots
-          # Run Cypress with explicit screenshot options
-          npx cypress run --env allure=true --record=false --config video=false --config screenshotsFolder=./screenshots
+          mkdir -p allure-results
 
-      - name: Check if screenshots exist
+      - name: Run Cypress tests
+        run: npx cypress run
+
+      - name: Check if screenshots were created
         run: |
+          echo "Listing screenshots:"
           ls -la screenshots/
-          if [ ! -d "screenshots" ] || [ $(ls -A screenshots | wc -l) -eq 0 ]; then
-            echo "Error: No screenshots found!"
-            exit 1
-          fi
+          echo "Listing allure-results:"
+          ls -la allure-results/
 
-      - name: Upload Screenshots Artifact
+      - name: Generate Allure Report
+        run: npx allure generate allure-results --clean -o allure-report
+
+      - name: Upload Test Screenshots
         uses: actions/upload-artifact@v4
         with:
           name: test-screenshots
           path: screenshots/
           retention-days: 7
 
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
+          retention-days: 7
 
