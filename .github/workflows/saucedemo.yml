@@ -20,44 +20,40 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: |
-          npm ci
-          npm install -g allure-commandline
+        run: npm ci
 
       - name: Verify Cypress install
         run: npx cypress verify
 
-      - name: Create Allure results directory
-        run: mkdir -p allure-results
-
       - name: Run Cypress tests
-        run: npx cypress run --config screenshotsFolder=./screenshots
+        run: |
+          mkdir -p screenshots
+          npx cypress run \
+            --config screenshotsFolder=./screenshots \
+            --env allure=true
 
       - name: Generate Allure Report
         run: |
-          allure generate allure-results --clean -o allure-report
-          echo "Allure report generated at: file://$(pwd)/allure-report/index.html"
+          npx allure generate allure-results --clean -o allure-report
+          echo "Allure report generated at: file://$PWD/allure-report/index.html"
 
-      - name: Upload Allure Report
+      - name: ⚠️ Show Local Report URL (FOR REFERENCE ONLY)
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "📌 Allure Report is available at:"
+          echo ""
+          echo "   http://192.168.1.108:61305/index.html"
+          echo ""
+          echo "❗ This is YOUR local machine URL."
+          echo "❗ Only YOU can access it."
+          echo "❗ Turn on your PC and run:"
+          echo "     allure open allure-report"
+          echo "=========================================="
+          echo ""
+
+      - name: Upload Allure Report (so you can download it)
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report/
-          retention-days: 7
-
-      - name: Show Instructions to Share Report
-        run: |
-          echo "=================================================================================="
-          echo "✅ Allure report is available as artifact: 'allure-report'"
-          echo "✅ Download it from GitHub Actions → Artifacts → allure-report"
-          echo "✅ Extract and run:"
-          echo "      allure open ./allure-report"
-          echo "      OR"
-          echo "      npx http-server allure-report -p 8080"
-          echo ""
-          echo "💡 To share online, run:"
-          echo "    npx localtunnel --port 8080"
-          echo "    and share the URL"
-          echo ""
-          echo "🌐 Example shared URL: https://your-name-report.localtunnel.me"
-          echo "=================================================================================="
